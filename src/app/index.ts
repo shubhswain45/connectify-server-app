@@ -4,6 +4,9 @@ import { ApolloServer } from '@apollo/server';
 import { expressMiddleware } from '@apollo/server/express4';
 import bodyParser from 'body-parser';
 import cookieParser from 'cookie-parser'
+import { GraphqlContext } from './interfaces';
+import JWTService from './services/JWTService';
+import { Auth } from './auth';
 
 
 export async function initServer() {
@@ -11,7 +14,7 @@ export async function initServer() {
 
     // CORS configuration
     const corsOptions = {
-        origin: ['http://localhost:3000'], // your frontend URL
+        origin: ['https://testing-app-fawn.vercel.app'], // your frontend URL
         credentials: true, // Ensure cookies are sent with cross-origin requests
     };
 
@@ -21,16 +24,26 @@ export async function initServer() {
     app.use(bodyParser.json({ limit: "10mb" }))
     app.use(cookieParser())
 
-    const graphqlServer = new ApolloServer({
+    const graphqlServer = new ApolloServer<GraphqlContext>({
         typeDefs: `
+            ${Auth.types}
+
             type Query {
                 sayHello: String!
+            }
+
+            type Mutation {
+                ${Auth.mutations}
             }
         `,
         resolvers: {
             Query: {
                sayHello: () => "Hello"
-            }
+            },
+
+            Mutation: {
+                ...Auth.resolvers.mutations,
+            },
         },
     });
 
@@ -40,7 +53,24 @@ export async function initServer() {
     app.use(
         '/graphql',
         // @ts-ignore
-        expressMiddleware(graphqlServer)
+        expressMiddleware(graphqlServer, {
+            context: async ({ req, res }: { req: Request; res: Response }): Promise<GraphqlContext> => {
+                let token = req.cookies["__connectify_token"];
+
+                let user = undefined;
+                if (token) {
+                    user = JWTService.decodeToken(token);
+                    console.log("decoded user", user);
+
+                }
+
+                return {
+                    user,
+                    req,
+                    res,
+                };
+            },
+        })
     );
 
 
