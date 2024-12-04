@@ -14,4 +14,9 @@ export const types = `#graphql
         email: String!
         password: String!
     }
+
+    input LoginUserPayload {
+        usernameOrEmail: String!
+        password: String!
+    }
 `

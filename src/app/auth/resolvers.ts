@@ -11,6 +11,11 @@ interface SignupUserPayload {
     password: string; // Required field
 }
 
+interface LoginUserPayload {
+    usernameOrEmail: string; // Required field (username or email)
+    password: string;        // Required field (password)
+}
+
 const mutations = {
     signupUser: async (parent: any, { payload }: { payload: SignupUserPayload }, ctx: GraphqlContext) => {
         try {
@@ -76,6 +81,53 @@ const mutations = {
 
         } catch (error: any) {
             console.log("Error while signupUser:", error.message);
+            throw new Error(error.message || 'An unexpected error occurred');
+        }
+    },
+
+    loginUser: async (parent: any, { payload }: { payload: LoginUserPayload }, ctx: GraphqlContext) => {
+        try {
+            const { usernameOrEmail, password } = payload;
+
+            // Check if username or email exists
+            const existingUser = await prismaClient.user.findFirst({
+                where: {
+                    OR: [
+                        { username: usernameOrEmail },
+                        { email: usernameOrEmail },
+                    ],
+                },
+            });
+
+            // If no user exists, throw an error
+            if (!existingUser) {
+                throw new Error('Sorry, user does not exist!');
+            }
+
+            // Compare the provided password with the stored password hash
+            const isPasswordCorrect = await bcrypt.compare(password, existingUser.password);
+
+            // If password is incorrect, throw an error
+            if (!isPasswordCorrect) {
+                throw new Error('Incorrect password!');
+            }
+
+            const userToken = JWTService.generateTokenForUser({ id: existingUser.id, username: existingUser.username });
+
+            // Set the JWT token in the cookiep
+            ctx.res.cookie('__connectify_token', userToken, {
+                httpOnly: true, // Prevents JavaScript from accessing the cookie, enhancing security
+                secure: true,  // Should be true in production to ensure cookies are sent over HTTPS only
+                maxAge: 1000 * 60 * 60 * 24, // 1 day expiry time
+                sameSite: 'none', // 'lax' is suitable for local development; use 'none' with HTTPS in production
+                path: '/', // The cookie is available to the entire site
+            });
+
+            // If everything is correct, return the existing user
+            return existingUser
+
+        } catch (error: any) {
+            console.log('Error while logging in user:', error.message);
             throw new Error(error.message || 'An unexpected error occurred');
         }
     },
