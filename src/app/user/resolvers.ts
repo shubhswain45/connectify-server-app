@@ -100,7 +100,7 @@ export const queries = {
           createdAt: track.createdAt,
           updatedAt: track.updatedAt,
           totalLikeCount: track._count.likes,
-          hasLiked: track.likes.length > 0, // Boolean to indicate if the user liked the track
+          hasLiked: ctx.user?.id ? track.likes.length > 0 : false, // Boolean to indicate if the user liked the track
         }));
       } catch (error: any) {
         console.error("Error fetching user tracks:", error);
