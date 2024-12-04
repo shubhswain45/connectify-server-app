@@ -1,8 +1,9 @@
 import { prismaClient } from "../../clients/db";
 import bcrypt from 'bcryptjs'
-import { GraphqlContext } from "../interfaces";
+import crypto from 'crypto'
 import JWTService from "../services/JWTService";
 import NodeMailerService from "../services/NodeMailerService";
+import { GraphqlContext } from "../interfaces";
 
 interface SignupUserPayload {
     username: string; // Required field
@@ -14,6 +15,17 @@ interface SignupUserPayload {
 interface LoginUserPayload {
     usernameOrEmail: string; // Required field (username or email)
     password: string;        // Required field (password)
+}
+
+interface VerifyEmailPayload {
+    code: string
+    email: string
+}
+
+interface ResetPasswordPayload {
+    token: string
+    newPassword: string
+    confirmPassword: string
 }
 
 const queries = {
@@ -143,6 +155,129 @@ const mutations = {
         } catch (error: any) {
             console.log('Error while logging in user:', error.message);
             throw new Error(error.message || 'An unexpected error occurred');
+        }
+    },
+
+    verifyEmail: async (parent: any, { payload }: { payload: VerifyEmailPayload }, ctx: GraphqlContext) => {
+        try {
+            // Find user by email
+            let user = await prismaClient.user.findUnique({
+                where: { email: payload?.email }
+            });
+
+            // Check if the user exists
+            if (!user) {
+                throw new Error("User not found.");
+            }
+
+            // Check if the user is already verified
+            if (user.isVerified) {
+                throw new Error("Your email is already verified.");
+            }
+
+            // Verify the token
+            if (user.verificationToken !== payload.code) {
+                throw new Error("Invalid verification code.");
+            }
+
+            // Check if the token has expired
+            if (user.verificationTokenExpiresAt && user.verificationTokenExpiresAt < new Date()) {
+                throw new Error("Verification token has expired.");
+            }
+
+            // Update user verification status
+            user = await prismaClient.user.update({
+                where: { email: payload.email },
+                data: {
+                    isVerified: true,
+                    verificationToken: null,
+                    verificationTokenExpiresAt: null,
+                },
+            });
+
+            NodeMailerService.sendWelcomeEmail(payload.email, user?.username || "")
+            return user;
+
+
+        } catch (error: any) {
+            console.log('Error while logging in user:', error.message);
+            throw new Error(error.message || 'An unexpected error occurred');
+        }
+    },
+
+    forgotPassword: async (parent: any, { emailOrUsername }: { emailOrUsername: string }, { res }: { res: any }) => {
+        try {
+            // Check if the user exists by email or username
+            const user = await prismaClient.user.findFirst({
+                where: {
+                    OR: [
+                        { email: emailOrUsername },
+                        { username: emailOrUsername }
+                    ]
+                }
+            });
+
+            if (!user) {
+                throw new Error("User not found.");
+            }
+
+            // Generate reset token
+            const resetToken = crypto.randomBytes(20).toString("hex");
+            const resetTokenExpiresAt = new Date(Date.now() + 1 * 60 * 60 * 1000); // 1 hour
+
+            // Save the updated user
+            await prismaClient.user.update({
+                where: { id: user.id }, // Use the user's ID for the update
+                data: { resetPasswordToken: resetToken, resetPasswordTokenExpiresAt: resetTokenExpiresAt },
+            });
+
+            // Send reset email
+            await NodeMailerService.sendPasswordResetEmail(user.email, `https://testing-app-fawn.vercel.app/reset-password/${resetToken}`)
+            // Send response
+            return true;
+        } catch (error: any) {
+            console.error("Error in forgotPassword: ", error);
+            throw new Error(error.message);
+        }
+    },
+
+    resetPassword: async (parent: any, { payload }: { payload: ResetPasswordPayload }, ctx: GraphqlContext) => {
+        try {
+            const { token, newPassword, confirmPassword } = payload;
+
+            // Check if the passwords match
+            if (newPassword !== confirmPassword) {
+                throw new Error("Passwords do not match");
+            }
+
+            // Find user with the reset password token and check expiration
+            const user = await prismaClient.user.findUnique({
+                where: {
+                    resetPasswordToken: token,
+                },
+            });
+
+            // Ensure the user exists and the token has not expired
+            if (!user || !user.resetPasswordTokenExpiresAt || user.resetPasswordTokenExpiresAt <= new Date()) {
+                throw new Error("Invalid or expired reset token");
+            }
+
+            // Update the password
+            const hashedPassword = await bcrypt.hash(newPassword, 10); // Use newPassword instead of password
+            await prismaClient.user.update({
+                where: { id: user.id }, // Update user by id
+                data: {
+                    password: hashedPassword,
+                    resetPasswordToken: null, // Clear the token
+                    resetPasswordTokenExpiresAt: null, // Clear the expiration
+                },
+            });
+
+            NodeMailerService.sendResetSuccessEmail(user?.email || "")
+            return true
+
+        } catch (error: any) {
+            throw new Error(error.message);
         }
     },
 
