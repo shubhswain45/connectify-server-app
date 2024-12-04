@@ -20,6 +20,7 @@ type Track {
   hasLiked: Boolean!
   
   author: User
+
 }
 
 `

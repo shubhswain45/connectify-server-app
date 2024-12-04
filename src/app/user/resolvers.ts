@@ -91,15 +91,7 @@ export const queries = {
         const hasLike ="lll"
         
         return tracks.map((track) => ({
-          id: track.id,
-          title: track.title,
-          artist: track.artist,
-          duration: track.duration,
-          coverImageUrl: track.coverImageUrl,
-          audioFileUrl: track.audioFileUrl,
-          createdAt: track.createdAt,
-          updatedAt: track.updatedAt,
-        //   totalLikeCount: track._count.likes,
+          ...track,
           hasLiked: ctx.user?.id ? track.likes.length > 0 : false, // Boolean to indicate if the user liked the track
         }));
       } catch (error: any) {
