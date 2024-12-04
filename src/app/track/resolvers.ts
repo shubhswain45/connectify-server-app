@@ -11,6 +11,67 @@ interface CreateTrackPayload {
     duration: string
 }
 
+const queries = {
+    //[1,2,3,4,5,6,7,8,9,10,11,12]
+    getFeedTracks: async (parent: any, agrs: { args: any }, ctx: GraphqlContext) => {
+        try {
+            // Fetch posts by users whom the current user follows
+            const tracks = await prismaClient.track.findMany({
+                take: 5,
+                include: {
+                    likes: {
+                        where: { userId: ctx.user?.id }, // Check if the specific user has liked the post
+                        select: { userId: true },
+                    },
+                }
+            });
+
+            return tracks.map(track => ({
+                ...track,
+                hasLiked: track.likes.length > 0, // Check if the likes array has the current user's like
+            }));
+            
+        } catch (error) {
+            console.error("Error fetching feed posts:", error);
+            throw new Error("Failed to fetch feed posts.");
+        }
+    },
+
+    getTrackById: async (
+        parent: any,
+        { trackId }: { trackId: string },
+        ctx: GraphqlContext
+    ) => {
+        try {
+            // Fetch the post along with related data
+            const track = await prismaClient.track.findUnique({
+                where: { id: trackId },
+                include: {
+                    likes: {
+                        where: { userId: ctx.user?.id }, // Check if the specific user has liked the post
+                        select: { userId: true },
+                    },
+                }
+            });
+
+            if (!track) {
+                return null;
+            }
+
+            return {
+                ...track,
+                hasLiked: track?.likes?.length > 0
+            }
+
+
+        } catch (error) {
+            // Log the error for debugging
+            console.error("Error fetching post:", error);
+            throw new Error("Failed to fetch the post. Please try again.");
+        }
+    },
+};
+
 const mutations = {
     createTrack: async (
         parent: any,
@@ -119,6 +180,8 @@ const mutations = {
             }
         }
     },
+
+
 };
 
 
@@ -129,4 +192,4 @@ const extraResolvers = {
 
 }
 
-export const resolvers = { mutations, extraResolvers };
+export const resolvers = { mutations, queries, extraResolvers };
