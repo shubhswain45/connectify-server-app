@@ -19,4 +19,16 @@ export const types = `#graphql
         usernameOrEmail: String!
         password: String!
     }
+
+    input VerifyEmailPayload {
+        code: String!
+        email: String!
+    }
+
+    input ResetPasswordPayload {
+        token: String!
+        newPassword: String!
+        confirmPassword: String!
+    }
+
 `

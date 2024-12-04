@@ -16,6 +16,20 @@ interface LoginUserPayload {
     password: string;        // Required field (password)
 }
 
+const queries = {
+    getCurrentUser: async (parent: any, args: any, ctx: GraphqlContext) => {
+        try {
+            const id = ctx.user?.id;
+            if (!id) return null;
+
+            const user = await prismaClient.user.findUnique({ where: { id } });
+            return user;
+        } catch (error) {
+            return null;
+        }
+    }
+};
+
 const mutations = {
     signupUser: async (parent: any, { payload }: { payload: SignupUserPayload }, ctx: GraphqlContext) => {
         try {
@@ -148,4 +162,4 @@ const mutations = {
     },
 };
 
-export const resolvers = { mutations }
+export const resolvers = { queries, mutations }
