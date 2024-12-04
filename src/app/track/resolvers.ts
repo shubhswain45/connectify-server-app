@@ -85,6 +85,40 @@ const mutations = {
             throw new Error(error.message || "An error occurred while toggling the like on the post.");
         }
     },
+
+    likeTrack: async (parent: any, { trackId }: { trackId: string }, ctx: GraphqlContext) => {
+        if (!ctx.user) throw new Error("Please Login/Signup first");
+
+        try {
+            // Attempt to delete the like (unlike the track)
+            await prismaClient.like.delete({
+                where: {
+                    userId_trackId: {
+                        userId: ctx.user.id,
+                        trackId,
+                    },
+                },
+            });
+            // If successful, return false (indicating the track is now unliked)
+            return false;
+
+        } catch (error: any) {
+            if (error.code === 'P2025') {
+                // Create a like if not found (toggle to liked)
+                await prismaClient.like.create({
+                    data: {
+                        userId: ctx.user.id,
+                        trackId,
+                    },
+                });
+                return true; // Indicate the track is now liked
+            } else {
+                // Log and throw unexpected errors
+                console.error("Error toggling like:", error);
+                throw new Error("An error occurred while toggling the like on the track.");
+            }
+        }
+    },
 };
 
 

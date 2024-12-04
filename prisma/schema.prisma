@@ -1,9 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -30,10 +27,15 @@ model User {
   resetPasswordToken          String?   @unique // Reset password token
   resetPasswordTokenExpiresAt DateTime? // Expiry of reset password token
 
-  tracks Track[] // Relation: tracks authored by the user
-
   createdAt DateTime @default(now()) // User creation timestamp
   updatedAt DateTime @updatedAt // Auto-updated timestamp
+
+  tracks Track[] // Relation: tracks authored by the user
+  likes  Like[] // Relation to track likes by this user
+
+  // Relations to Followers and Followings through the Follow model
+  followings       Follow[]  @relation("Follower")  // Users this user is following
+  followers       Follow[]  @relation("Following")  // Users following this user
 }
 
 model Track {
@@ -46,6 +48,35 @@ model Track {
   createdAt     DateTime @default(now()) // Track creation timestamp
   updatedAt     DateTime @updatedAt // Auto-updated timestamp
 
+  likes Like[] // Relation to track likes on this post
+
   authorId String // Foreign key for the User
   author   User   @relation(fields: [authorId], references: [id]) // Relation to User model
+}
+
+model Like {
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  track   Track  @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  trackId String
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, trackId]) // Ensure that a user can like a post only once
+}
+
+model Follow {
+  id          String   @id @default(cuid())
+  followerId  String
+  followingId String
+
+  follower    User     @relation("Follower", fields: [followerId], references: [id], onDelete: Cascade)
+  following   User     @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
+
+  @@unique([followerId, followingId]) // Ensure a user cannot follow the same user multiple times
+  @@index([followerId])  // Index for fast lookup of follows by followerId
+  @@index([followingId]) // Index for fast lookup of follows by followingId
 }
