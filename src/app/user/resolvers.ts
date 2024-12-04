@@ -99,7 +99,7 @@ export const queries = {
           audioFileUrl: track.audioFileUrl,
           createdAt: track.createdAt,
           updatedAt: track.updatedAt,
-          totalLikeCount: track._count.likes,
+        //   totalLikeCount: track._count.likes,
           hasLiked: ctx.user?.id ? track.likes.length > 0 : false, // Boolean to indicate if the user liked the track
         }));
       } catch (error: any) {
