@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken'
 import dotenv from 'dotenv'
-import { JWTUser } from '../interfaces'
+import { JWTUser } from '../app/interfaces'
 
 dotenv.config()
 

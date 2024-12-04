@@ -5,8 +5,9 @@ import { expressMiddleware } from '@apollo/server/express4';
 import bodyParser from 'body-parser';
 import cookieParser from 'cookie-parser'
 import { GraphqlContext } from './interfaces';
-import JWTService from './services/JWTService';
+import JWTService from '../services/JWTService';
 import { Auth } from './auth';
+import { Track } from './track';
 
 
 export async function initServer() {
@@ -27,6 +28,7 @@ export async function initServer() {
     const graphqlServer = new ApolloServer<GraphqlContext>({
         typeDefs: `
             ${Auth.types}
+            ${Track.types}
 
             type Query {
                 ${Auth.queries}
@@ -34,6 +36,7 @@ export async function initServer() {
 
             type Mutation {
                 ${Auth.mutations}
+                ${Track.mutations}
             }
         `,
         resolvers: {
@@ -43,7 +46,9 @@ export async function initServer() {
 
             Mutation: {
                 ...Auth.resolvers.mutations,
+                ...Track.resolvers.mutations
             },
+            ...Track.resolvers.extraResolvers
         },
     });
 

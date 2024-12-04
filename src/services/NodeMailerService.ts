@@ -1,6 +1,6 @@
 import dotenv from 'dotenv';
-import { transporter } from '../../config/nodeMailer';
-import { PASSWORD_RESET_REQUEST_TEMPLATE, PASSWORD_RESET_SUCCESS_TEMPLATE, VERIFICATION_EMAIL_TEMPLATE, WELCOME_EMAIL_TEMPLATE } from '../../templates/emailTemplates';
+import { transporter } from '../config/nodeMailer';
+import { PASSWORD_RESET_REQUEST_TEMPLATE, PASSWORD_RESET_SUCCESS_TEMPLATE, VERIFICATION_EMAIL_TEMPLATE, WELCOME_EMAIL_TEMPLATE } from '../templates/emailTemplates';
 
 dotenv.config();
 

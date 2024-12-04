@@ -30,6 +30,22 @@ model User {
   resetPasswordToken          String?   @unique // Reset password token
   resetPasswordTokenExpiresAt DateTime? // Expiry of reset password token
 
+  tracks Track[] // Relation: tracks authored by the user
+
   createdAt DateTime @default(now()) // User creation timestamp
   updatedAt DateTime @updatedAt // Auto-updated timestamp
+}
+
+model Track {
+  id            String   @id @default(cuid()) // Unique identifier
+  title         String // Track title
+  artist        String? // Name of the artist or band
+  duration      String // Duration of the track in seconds
+  coverImageUrl String? // Optional URL to the cover image
+  audioFileUrl  String // URL to the audio file
+  createdAt     DateTime @default(now()) // Track creation timestamp
+  updatedAt     DateTime @updatedAt // Auto-updated timestamp
+
+  authorId String // Foreign key for the User
+  author   User   @relation(fields: [authorId], references: [id]) // Relation to User model
 }

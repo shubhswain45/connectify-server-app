@@ -1,8 +1,8 @@
 import { prismaClient } from "../../clients/db";
 import bcrypt from 'bcryptjs'
 import crypto from 'crypto'
-import JWTService from "../services/JWTService";
-import NodeMailerService from "../services/NodeMailerService";
+import JWTService from "../../services/JWTService";
+import NodeMailerService from "../../services/NodeMailerService";
 import { GraphqlContext } from "../interfaces";
 
 interface SignupUserPayload {
