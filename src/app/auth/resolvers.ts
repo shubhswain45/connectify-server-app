@@ -131,6 +131,21 @@ const mutations = {
             throw new Error(error.message || 'An unexpected error occurred');
         }
     },
+
+    logoutUser: async (parent: any, args: any, ctx: GraphqlContext) => {
+        try {
+            ctx.res.clearCookie("__connectify_token", {
+                httpOnly: true,
+                secure: true, // Set to `true` in production
+                sameSite: 'none',
+                path: '/',
+            });
+
+            return true;
+        } catch (error) {
+            throw new Error("Logout failed. Please try again.");
+        }
+    },
 };
 
 export const resolvers = { mutations }
