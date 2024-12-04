@@ -8,6 +8,7 @@ import { GraphqlContext } from './interfaces';
 import JWTService from '../services/JWTService';
 import { Auth } from './auth';
 import { Track } from './track';
+import { User } from './user';
 
 
 export async function initServer() {
@@ -29,6 +30,7 @@ export async function initServer() {
         typeDefs: `
             ${Auth.types}
             ${Track.types}
+            ${User.types}
 
             type Query {
                 ${Auth.queries}
@@ -38,6 +40,7 @@ export async function initServer() {
             type Mutation {
                 ${Auth.mutations}
                 ${Track.mutations}
+                ${User.mutations}
             }
         `,
         resolvers: {
@@ -48,7 +51,8 @@ export async function initServer() {
 
             Mutation: {
                 ...Auth.resolvers.mutations,
-                ...Track.resolvers.mutations
+                ...Track.resolvers.mutations,
+                ...User.resolvers.mutations
             },
             ...Track.resolvers.extraResolvers
         },
