@@ -2,6 +2,7 @@ import { prismaClient } from "../../clients/db";
 import bcrypt from 'bcryptjs'
 import { GraphqlContext } from "../interfaces";
 import JWTService from "../services/JWTService";
+import NodeMailerService from "../services/NodeMailerService";
 
 interface SignupUserPayload {
     username: string; // Required field
@@ -69,8 +70,7 @@ const mutations = {
                 path: '/', // The cookie is available to the entire site
             });
 
-            //TODO
-            // await NodeMailerService.sendVerificationEmail(newUser.email, verificationToken)
+            await NodeMailerService.sendVerificationEmail(newUser.email, verificationToken)
 
             return newUser;
 
