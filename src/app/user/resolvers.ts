@@ -1,6 +1,117 @@
 import { prismaClient } from "../../clients/db";
 import { GraphqlContext } from "../interfaces";
 
+export const queries = {
+    getUserProfile: async (
+      parent: any,
+      { username }: { username: string },
+      ctx: GraphqlContext
+    ) => {
+      try {
+        const currentUserId = ctx.user?.id;
+  
+        const user = await prismaClient.user.findUnique({
+          where: { username },
+          select: {
+            id: true,
+            username: true,
+            fullName: true,
+            profileImageURL: true,
+            bio: true,
+            _count: {
+              select: {
+                tracks: true,
+                followers: true,
+                followings: true,
+              },
+            },
+            followers: currentUserId
+              ? {
+                  where: {
+                    followerId: currentUserId,
+                  },
+                  select: { id: true }, // Only retrieve necessary fields
+                }
+              : undefined, // Skip this query if currentUserId is not defined
+          },
+        });
+  
+        if (!user) {
+          return null; // Return null if user does not exist
+        }
+  
+        const totalTracks = user._count.tracks;
+        const totalFollowers = user._count.followers;
+        const totalFollowings = user._count.followings;
+        const followedByMe = currentUserId ? user.followers.length > 0 : false;
+  
+        return {
+          id: user.id,
+          username: user.username,
+          fullName: user.fullName,
+          profileImageURL: user.profileImageURL || "", // Default to an empty string
+          bio: user.bio,
+          totalTracks,
+          totalFollowers,
+          totalFollowings,
+          followedByMe,
+        };
+      } catch (error: any) {
+        console.error("Error fetching user profile:", error);
+        throw new Error(
+          error.message || "An error occurred while fetching the user profile."
+        );
+      }
+    },
+  
+    getUserTracks: async (
+      parent: any,
+      { username }: { username: string },
+      ctx: GraphqlContext
+    ) => {
+      try {
+        const tracks = await prismaClient.track.findMany({
+          where: { author: { username } },
+          orderBy: {
+            createdAt: "desc", // Sort by creation date
+          },
+          include: {
+            _count: {
+              select: { likes: true }, // Retrieve the count of likes
+            },
+            likes: ctx.user?.id
+              ? {
+                  where: { userId: ctx.user.id },
+                  select: { userId: true }, // Check if the current user has liked the track
+                }
+              : undefined, // Skip if the user is not logged in
+          },
+        });         
+  
+        const hasLike ="lll"
+        
+        return tracks.map((track) => ({
+          id: track.id,
+          title: track.title,
+          artist: track.artist,
+          duration: track.duration,
+          coverImageUrl: track.coverImageUrl,
+          audioFileUrl: track.audioFileUrl,
+          createdAt: track.createdAt,
+          updatedAt: track.updatedAt,
+          totalLikeCount: track._count.likes,
+          hasLiked: track.likes.length > 0, // Boolean to indicate if the user liked the track
+        }));
+      } catch (error: any) {
+        console.error("Error fetching user tracks:", error);
+        throw new Error(
+          error.message || "Failed to fetch user tracks. Please try again."
+        );
+      }
+    },
+  };
+  
+
 const mutations = {
     followUser: async (parent: any, { userId }: { userId: string }, ctx: GraphqlContext) => {
         // Ensure the user is authenticated
@@ -39,4 +150,4 @@ const mutations = {
     }
 }
 
-export const resolvers = { mutations }
+export const resolvers = { queries, mutations }
