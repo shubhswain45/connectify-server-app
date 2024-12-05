@@ -90,6 +90,10 @@ export const queries = {
   
         const hasLike ="lll"
         
+
+
+        console.log(tracks);
+        
         return tracks.map((track) => ({
           ...track,
           hasLiked: ctx.user?.id ? track.likes.length > 0 : false, // Boolean to indicate if the user liked the track
