@@ -9,6 +9,7 @@ import JWTService from '../services/JWTService';
 import { Auth } from './auth';
 import { Track } from './track';
 import { User } from './user';
+import { Playlist } from './playlist';
 
 
 export async function initServer() {
@@ -31,6 +32,7 @@ export async function initServer() {
             ${Auth.types}
             ${Track.types}
             ${User.types}
+            ${Playlist.types}
 
             type Query {
                 ${Auth.queries}
@@ -42,6 +44,7 @@ export async function initServer() {
                 ${Auth.mutations}
                 ${Track.mutations}
                 ${User.mutations}
+                ${Playlist.mutations}
             }
         `,
         resolvers: {
@@ -54,10 +57,12 @@ export async function initServer() {
             Mutation: {
                 ...Auth.resolvers.mutations,
                 ...Track.resolvers.mutations,
-                ...User.resolvers.mutations
+                ...User.resolvers.mutations,
+                ...Playlist.resolvers.mutations
             },
             ...Track.resolvers.extraResolvers
         },
+        introspection: false
     });
 
     await graphqlServer.start();
