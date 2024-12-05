@@ -62,7 +62,7 @@ export async function initServer() {
             },
             ...Track.resolvers.extraResolvers
         },
-        introspection: false
+        introspection: true
     });
 
     await graphqlServer.start();
